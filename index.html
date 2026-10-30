@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>三角迷阵 · 闯关练习</title>
+  <meta name="theme-color" content="#101a33">
+  <meta name="description" content="5–25 行可选，共 5 关，每关 5 或 10 题，每关限时 5 分钟。">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="三角迷阵 · 闯关练习">
+  <meta property="og:description" content="5–25 行可选，共 5 关，每关 5 或 10 题，每关限时 5 分钟。">
+  <meta property="og:image" content="assets/screenshot-demo.png">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-lockup">
+        <span class="brand-mark" aria-hidden="true">△</span>
+        <div>
+          <p class="eyebrow">AI 面试认知游戏练习</p>
+          <h1>三角迷阵 · 闯关练习</h1>
+        </div>
+      </div>
+      <span class="practice-badge">非官方模拟</span>
+    </header>
+
+    <section class="scoreboard" aria-label="挑战状态">
+      <article class="score-card progress-card">
+        <span class="score-label">当前进度</span>
+        <strong id="questionValue">准备开始</strong>
+        <div id="roundTrack" class="round-track" aria-label="5 关进度"></div>
+      </article>
+      <article id="timerCard" class="score-card timer-card">
+        <span class="score-label">本关剩余时间</span>
+        <strong id="timerValue" aria-live="polite">05:00</strong>
+      </article>
+      <article class="score-card">
+        <span class="score-label">累计捕获</span>
+        <strong id="sessionScoreValue">0 / —</strong>
+        <span id="bestRateValue" class="score-subtext">最佳记录：—</span>
+      </article>
+    </section>
+
+    <main class="game-layout">
+      <section class="board-card" aria-labelledby="boardTitle">
+        <div class="board-heading">
+          <div>
+            <p id="roundLabel" class="round-label">热身说明</p>
+            <h2 id="boardTitle">规划一条得分最高的路径</h2>
+          </div>
+          <span id="difficultyBadge" class="difficulty-badge">规则</span>
+        </div>
+
+        <p id="boardInstruction" class="board-instruction">
+          从顶点出发，每一层只能走向左下或右下相邻节点；每题恰好只有一条最优路径。
+        </p>
+
+        <div id="mazeStage" class="maze-stage">
+          <div id="introPanel" class="intro-panel">
+            <div class="intro-graphic" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <h2>自选迷阵，挑战 5 关</h2>
+            <div class="practice-settings">
+              <label for="rowsSelect">迷阵行数<select id="rowsSelect" aria-describedby="rowsHint"></select></label>
+              <label for="countSelect">每关题数<select id="countSelect"><option value="5">5 题</option><option value="10">10 题</option></select></label>
+            </div>
+            <p id="rowsHint" class="settings-hint">可选 5–25 行，最底行的节点数与行数相同。</p>
+            <p id="settingsSummary" class="settings-summary">共 5 关 · 每关 5 题 · 总计 25 题</p>
+            <p>发光点计 1 分。路线到达最底行后提交答案，每题都会显示最优路径供你复盘。</p>
+            <ul>
+              <li>每关限时 5 分钟，关卡之间暂停计时</li>
+              <li>每题最优路径唯一，需比较岔路的后续收益</li>
+              <li>从观察比较到综合挑战，难度逐步递增</li>
+              <li>可撤销、重置或中途退出并查看成绩</li>
+            </ul>
+            <button id="startBtn" class="button button-primary button-large" type="button">开始第 1 关</button>
+          </div>
+
+          <div id="mazeWrap" class="maze-wrap" hidden>
+            <svg id="mazeSvg" class="maze-svg" viewBox="0 0 760 500" role="img" aria-label="三角迷阵"></svg>
+          </div>
+        </div>
+
+        <div class="board-legend" aria-label="图例">
+          <span><i class="legend-dot light-dot"></i>发光点 +1</span>
+          <span><i class="legend-dot normal-dot"></i>普通点</span>
+          <span><i class="legend-line player-line"></i>你的路径</span>
+          <span><i class="legend-line optimal-line"></i>最优路径</span>
+        </div>
+      </section>
+
+      <aside class="control-card" aria-labelledby="controlTitle">
+        <div>
+          <p class="side-kicker">本题操作</p>
+          <h2 id="controlTitle">点击下一层的可选节点</h2>
+        </div>
+
+        <div class="round-stats">
+          <article>
+            <span>当前捕获</span>
+            <strong id="captureValue">0</strong>
+          </article>
+          <article>
+            <span>路径进度</span>
+            <strong id="pathProgressValue">0 / 0</strong>
+          </article>
+        </div>
+
+        <div class="mini-rule">
+          <span class="rule-arrow">↙</span>
+          <span class="rule-arrow">↘</span>
+          <p>每走一层只有两个方向。先看完整布局，再决定第一步。</p>
+        </div>
+
+        <div class="button-stack">
+          <button id="submitBtn" class="button button-primary" type="button" disabled>提交本题</button>
+          <div class="button-pair">
+            <button id="undoBtn" class="button button-secondary" type="button" disabled>撤销一步</button>
+            <button id="resetRoundBtn" class="button button-secondary" type="button" disabled>重置路径</button>
+          </div>
+          <button id="skipBtn" class="button button-ghost" type="button" disabled>跳过本题</button>
+          <button id="exitBtn" class="button button-exit" type="button" hidden>退出练习并查看成绩</button>
+          <button id="settingsBtn" class="button button-secondary" type="button" hidden>返回设置</button>
+        </div>
+
+        <div id="statusBox" class="status-box" role="status" aria-live="polite" data-state="info">
+          点击“开始第 1 关”后计时。
+        </div>
+
+        <p class="keyboard-hint">支持鼠标点击；聚焦节点后也可按 Enter 或空格选择。</p>
+      </aside>
+    </main>
+
+    <section id="feedbackCard" class="feedback-card" hidden aria-live="polite">
+      <div>
+        <p class="side-kicker">本题复盘</p>
+        <h2 id="feedbackTitle">完成</h2>
+        <p id="feedbackText"></p>
+      </div>
+      <div class="feedback-score">
+        <span id="feedbackScoreLabel">本题捕获</span>
+        <strong id="feedbackScoreValue">0 / 0</strong>
+      </div>
+      <button id="nextBtn" class="button button-primary" type="button">下一题</button>
+    </section>
+
+    <footer class="page-footer">
+      <p>训练重点：全局观察、路径规划和限时决策。模拟规则不代表招聘方官方测评。</p>
+    </footer>
+  </div>
+
+  <div id="summaryModal" class="modal-backdrop" hidden>
+    <section class="summary-modal" role="dialog" aria-modal="true" aria-labelledby="summaryTitle">
+      <span class="summary-icon" aria-hidden="true">△</span>
+      <p class="eyebrow">挑战结束</p>
+      <h2 id="summaryTitle">本次练习成绩</h2>
+      <div class="summary-score-ring">
+        <strong id="summaryRateValue">0%</strong>
+        <span>已作答捕获率</span>
+      </div>
+      <p id="summaryMessage" class="summary-message"></p>
+      <div class="summary-totals">
+        <div><span>完成题数</span><strong id="completedValue">0 / 25</strong></div>
+        <div><span>捕获点数</span><strong id="summaryCaptureValue">0 / 0</strong></div>
+        <div><span>本关剩余时间</span><strong id="remainingValue">00:00</strong></div>
+      </div>
+      <div id="summaryRounds" class="summary-rounds" aria-label="逐题成绩"></div>
+      <div class="summary-actions">
+        <button id="restartBtn" class="button button-primary" type="button">按当前设置再练</button>
+        <button id="closeSummaryBtn" class="button button-secondary" type="button">返回设置</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="solver.js"></script>
+  <script src="question-bank.js"></script>
+  <script src="generator.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
